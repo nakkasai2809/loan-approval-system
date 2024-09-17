@@ -1,0 +1,24 @@
+module RepaymentRestriction where
+
+import Daml.Script
+
+template RepaymentRestriction
+  with
+    minRepaymentAmount: Decimal
+  where
+    signatory
+
+    -- Optionally define a key for querying or maintaining the contract
+    key (minRepaymentAmount) : (Decimal)
+    maintainer
+
+    -- Choice to update the minimum repayment amount (if needed)
+    choice UpdateMinRepaymentAmount : ()
+      with
+        newMinRepaymentAmount: Decimal
+      controller
+        -- Assuming the signatory can update the min repayment amount
+      do
+        -- Update the minimum repayment amount
+        create this with minRepaymentAmount = newMinRepaymentAmount
+        return ()

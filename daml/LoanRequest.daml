@@ -1,0 +1,37 @@
+module LoanRequest where
+
+import Loan
+import LoanLimit
+import Daml.Script
+
+template LoanRequest
+  with
+    borrower: Party
+    bank: Party
+    amount: Decimal
+  where
+    signatory borrower
+    observer bank
+
+    choice ApproveRequest : ContractId Loan
+      with
+        bankApproval: Party
+      controller bank
+      do
+        -- Query the LoanLimit using the key
+        loanLimitCid <- queryByKey @LoanLimit bank
+        loanLimit <- fetch loanLimitCid
+
+        -- Validate loan limit
+        assert (amount <= maxLimit loanLimit)
+
+        -- Create a new Loan contract
+        loanCid <- create Loan with
+          borrower = borrower
+          bank = bank
+          amount = amount
+          disbursedAmount = 0.0
+
+        -- Archive the LoanRequest contract
+        archive self
+        return loanCid

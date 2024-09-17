@@ -1,0 +1,13 @@
+module LoanLimit where
+
+import Daml.Script
+
+template LoanLimit
+  with
+    bank: Party
+    maxLimit: Decimal
+  where
+    signatory bank
+
+    key bank : Party
+    maintainers = [bank]

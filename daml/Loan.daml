@@ -1,0 +1,56 @@
+module Loan where
+
+import Token
+import RepaymentRestriction
+import Daml.Script
+
+template Loan
+  with
+    borrower: Party
+    bank: Party
+    amount: Decimal
+    disbursedAmount: Decimal
+    repaidAmount: Decimal
+  where
+    signatory borrower, bank
+
+    choice Disburse : ()
+      with
+        amountToDisburse: Decimal
+      controller bank
+      do
+        -- Ensure the total disbursed amount does not exceed the approved amount
+        assert (disbursedAmount + amountToDisburse <= amount)
+
+        -- Mint tokens
+        tokenCid <- create Token with
+          owner = borrower
+          amount = amountToDisburse
+
+        -- Update the disbursed amount
+        exercise self Disburse with
+          disbursedAmount = disbursedAmount + amountToDisburse
+
+        return ()
+
+    choice Repay : ()
+      with
+        repaymentAmount: Decimal
+      controller borrower
+      do
+        -- Ensure the repayment amount meets the minimum requirement
+        repaymentRestrictionCid <- query @RepaymentRestriction
+        repaymentRestriction <- fetch repaymentRestrictionCid
+        assert (repaymentAmount >= minRepaymentAmount repaymentRestriction)
+
+        -- Update the repaid amount
+        exercise self Repay with
+          repaidAmount = repaidAmount + repaymentAmount
+
+        -- Archive the contract if fully repaid
+        if (repaidAmount + repaymentAmount >= amount) then
+          archive self
+        else
+          return ()
+
+        return ()

@@ -1,0 +1,54 @@
+module LoanRepaymentTest where
+
+import Daml.Script
+import LoanRequest
+import Loan
+import LoanLimit
+import Token
+import RepaymentRestriction
+
+test : Scenario ()
+test = do
+  -- Create parties
+  borrower <- allocateParty "Alice"
+  bank <- allocateParty "Bob"
+
+  -- Create LoanLimit
+  submit bank do
+    create LoanLimit with
+      bank = bank
+      maxLimit = 5000.0
+
+  -- Create RepaymentRestriction
+  submit bank do
+    create RepaymentRestriction with
+      minRepaymentAmount = 100.0
+
+  -- Create LoanRequest
+  requestCid <- submit borrower do
+    create LoanRequest with
+      borrower = borrower
+      bank = bank
+      amount = 1000.0
+
+  -- Approve LoanRequest
+  loanCid <- submit bank do
+    exercise requestCid ApproveRequest with
+      bankApproval = bank
+
+  -- Disburse tokens
+  submit bank do
+    exercise loanCid Disburse with
+      amountToDisburse = 500.0
+
+  -- Repay loan
+  submit borrower do
+    exercise loanCid Repay with
+      repaymentAmount = 100.0
+
+  -- Test full repayment
+  submit borrower do
+    exercise loanCid Repay with
+      repaymentAmount = 900.0
+
+  return ()

@@ -1,0 +1,38 @@
+module LoanApprovalTest where
+
+import Daml.Script
+import LoanRequest
+import Loan
+import LoanLimit
+import Token
+
+test : Scenario ()
+test = do
+  -- Create parties
+  borrower <- allocateParty "Alice"
+  bank <- allocateParty "Bob"
+
+  -- Create LoanLimit
+  submit bank do
+    create LoanLimit with
+      bank = bank
+      maxLimit = 5000.0
+
+  -- Create LoanRequest
+  requestCid <- submit borrower do
+    create LoanRequest with
+      borrower = borrower
+      bank = bank
+      amount = 1000.0
+
+  -- Approve LoanRequest
+  loanCid <- submit bank do
+    exercise requestCid ApproveRequest with
+      bankApproval = bank
+
+  -- Disburse tokens
+  submit bank do
+    exercise loanCid Disburse with
+      amountToDisburse = 500.0
+
+  return ()

@@ -1,0 +1,9 @@
+name: loan-approval-system
+source: daml
+target: .daml/dist
+sdk-version: 2.9.4
+main: Main:setup
+dependencies:
+  - daml-prim
+  - daml-stdlib
+  - daml-script

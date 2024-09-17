@@ -1,0 +1,53 @@
+module Main where
+
+import Daml.Script
+import LoanRequest
+import Loan
+import LoanLimit
+import Token
+import RepaymentRestriction
+
+-- | Setup the initial state and run tests
+setup : Script ()
+setup = do
+    -- Create parties
+    borrower <- allocateParty "Alice"
+    bank <- allocateParty "Bob"
+
+    -- Create initial contracts
+    loanLimitCid <- submit bank do
+        create LoanLimit with
+            bank = bank
+            maxLimit = 5000.0
+
+    repaymentRestrictionCid <- submit bank do
+        create RepaymentRestriction with
+            minRepaymentAmount = 100.0
+
+    -- Test Loan Approval Workflow
+    requestCid <- submit borrower do
+        create LoanRequest with
+            borrower = borrower
+            bank = bank
+            amount = 1000.0
+
+    loanCid <- submit bank do
+        exercise requestCid ApproveRequest with
+            bankApproval = bank
+
+    -- Test Token Disbursement
+    submit bank do
+        exercise loanCid Disburse with
+            amountToDisburse = 500.0
+
+    -- Test Loan Repayment Workflow
+    submit borrower do
+        exercise loanCid Repay with
+            repaymentAmount = 100.0
+
+    -- Test full repayment
+    submit borrower do
+        exercise loanCid Repay with
+            repaymentAmount = 900.0
+
+    return ()

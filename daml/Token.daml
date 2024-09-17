@@ -1,0 +1,10 @@
+module Token where
+
+import Daml.Script
+
+template Token
+  with
+    owner: Party
+    amount: Decimal
+  where
+    signatory owner
